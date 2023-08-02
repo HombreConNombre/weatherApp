@@ -6,11 +6,15 @@ class Provincia( models.Model):
     models (repository): Lo usamos para crear la estructura de la tabla.
   """
   prov_code = models.CharField(max_length = 100,
-                               unique = True)
+                               unique = True,
+                               blank = False)
   prov_name = models.CharField(max_length=100)
   autono_code = models.CharField(max_length=100)
   com_auton = models.CharField(max_length=100)
   capital_city = models.CharField(max_length=100)
+
+  def __str__(self) -> str:
+    return super().__str__()
 
 
 class Municipios( models.Model):
@@ -27,3 +31,6 @@ class Municipios( models.Model):
     null = False,
     on_delete = models.CASCADE
   )
+
+  def __str__(self) -> str:
+    return super().__str__()
