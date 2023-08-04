@@ -13,8 +13,6 @@ class Provincia( models.Model):
   com_auton = models.CharField(max_length=100)
   capital_city = models.CharField(max_length=100)
 
-  def __str__(self) -> str:
-    return super().__str__()
 
 
 class Municipios( models.Model):
@@ -31,6 +29,3 @@ class Municipios( models.Model):
     null = False,
     on_delete = models.CASCADE
   )
-
-  def __str__(self) -> str:
-    return super().__str__()

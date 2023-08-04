@@ -78,6 +78,7 @@ def load_muni():
             codigo_inicial = 'x'
             for line in muni_json:
                 if codigo_inicial != line['CODPROV']:
+                    print("HE ENTRADO")
                     codigo_inicial = line['CODPROV']
                     provin_aux = Provincia.objects.get( prov_code = codigo_inicial)
 
@@ -100,34 +101,61 @@ def IP_location( user_IP):
     if response.status_code == 200:
         IP_json = response.json()
         if IP_json['country_code'] != "ES":
-            return False
-        municipio = Municipios.objects.get( muni_code = IP_json['postal_code'])
-        return municipio
+            return "400"
+        municipio = Municipios.objects.get( muni_name = IP_json['city'])
+        print(IP_json['city'])
+        prov_and_muni_codes = municipio.prov_code.prov_code +"||"+ municipio.muni_code
+        return prov_and_muni_codes
     else:
         write_log("Error al localizar al usuario.")
-        return False
+        return "400"
 
 
 def weather_consult( IP):
-    municipio = IP_location( IP)
-    if municipio == False:
+    """Realizamos la consulta del tiempo
+
+    Args:
+        IP (string): La IP del usuario, para hacer la consulta de ubicación.
+
+    Returns:
+        XML: Pasamos los datos necesarios para pintar en pantalla.
+    """
+    codes = IP_location( IP)
+    print(codes)
+    if codes == "400":
         return False
-    prov_code = municipio.prov_code.prov_code
-    muni_code = municipio.muni_code
-    respuesta = requests.get("https://www.el-tiempo.net/api/json/v2/provincias/",prov_code,"/municipios/",muni_code)
-    print(respuesta.json())
+    lst_codes = codes.split("||")
+    prov_code = str(lst_codes[0])
+    muni_code = str(lst_codes[1])
+    response = requests.get(f"https://www.el-tiempo.net/api/json/v2/provincias/{prov_code}/municipios/{muni_code}",
+                            timeout = 5)
+    return response.json()
 
 # Cargamos el index de WeatherNow
 def weatherNow( request):
+    """Creación del HTML de la APP
+
+    Args:
+        request (string): solicitud para cargar la página web, tiene información como IP, Address...
+
+    Returns:
+        html: El HTML final
+    """
     html_template = loader.get_template('index.html')
     # Parte que se acabará iendo a una API creada con FastAPI
     load_provin()
     load_muni()
     #Cogemos la IP del usuario
     user_IP = request.META.get('REMOTE_ADDR')
+    weather_info = ""
     if user_IP == "127.0.0.1":
-        weather_consult( "213.229.164.230")
+        weather_info = weather_consult( "89.29.194.20")
+        print(weather_info)
     else:
-        weather_consult( user_IP)
+        weather_info = weather_consult( user_IP)
+        print(weather_info)
 
-    return HttpResponse(html_template.render())
+    context = {
+        'ubicacion': weather_info["municipio"]["NOMBRE"].upper(),
+    }
+    return HttpResponse(html_template.render(context, request))
